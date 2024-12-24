@@ -1,33 +1,41 @@
 # Create an EC2 Auto Scaling Group - web
 resource "aws_autoscaling_group" "three-tier-web-asg" {
-  name                 = "three-tier-web-asg"
-  launch_configuration = aws_launch_configuration.three-tier-web-lconfig.id
-  vpc_zone_identifier  = [aws_subnet.three-tier-pub-sub-1.id, aws_subnet.three-tier-pub-sub-2.id]
-  min_size             = 2
-  max_size             = 3
-  desired_capacity     = 2
+  name                = "three-tier-web-asg"
+  vpc_zone_identifier = [aws_subnet.three-tier-pub-sub-1.id, aws_subnet.three-tier-pub-sub-2.id]
+  min_size            = 2
+  max_size            = 3
+  desired_capacity    = 2
+  launch_template {
+    id      = aws_launch_template.three-tier-web-lconfig.id
+    version = "$Latest"
+  }
+  depends_on = [aws_launch_template.three-tier-web-lconfig]
 }
 
 # Create an EC2 Auto Scaling Group - app
 resource "aws_autoscaling_group" "three-tier-app-asg" {
-  name                 = "three-tier-app-asg"
-  launch_configuration = aws_launch_configuration.three-tier-app-lconfig.id
-  vpc_zone_identifier  = [aws_subnet.three-tier-pvt-sub-1.id, aws_subnet.three-tier-pvt-sub-2.id]
-  min_size             = 2
-  max_size             = 3
-  desired_capacity     = 2
+  name                = "three-tier-app-asg"
+  vpc_zone_identifier = [aws_subnet.three-tier-pvt-sub-1.id, aws_subnet.three-tier-pvt-sub-2.id]
+  min_size            = 2
+  max_size            = 3
+  desired_capacity    = 2
+  launch_template {
+    id      = aws_launch_template.three-tier-app-lconfig.id
+    version = "$Latest"
+  }
+  depends_on = [aws_launch_template.three-tier-app-lconfig]
 }
 
 ###################################################################################################################################
 
 # Create a launch configuration for the EC2 instances
-resource "aws_launch_configuration" "three-tier-web-lconfig" {
-  name_prefix                 = "three-tier-web-lconfig"
-  image_id                    = "ami-0b3a4110c36b9a5f0"
-  instance_type               = "t2.micro"
-  key_name                    = "three-tier-web-asg-kp"
-  security_groups             = [aws_security_group.three-tier-ec2-asg-sg.id]
-  user_data                   = <<-EOF
+resource "aws_launch_template" "three-tier-web-lconfig" {
+  name_prefix            = "three-tier-web-lconfig"
+  image_id               = "ami-021e165d8c4ff761d"
+  instance_type          = "t2.micro"
+  vpc_security_group_ids = [aws_security_group.autoscaling-sg-web.id]
+  key_name               = "three-tier-web-asg-kp"
+  user_data = base64encode(<<-EOF
                                 #!/bin/bash
 
                                 # Update the system
@@ -119,31 +127,82 @@ resource "aws_launch_configuration" "three-tier-web-lconfig" {
                                 ' > /var/www/html/index.html
 
                                 EOF
-                                
-  associate_public_ip_address = true
+  )
+
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
     ignore_changes  = all
   }
 }
 
 # Create a launch configuration for the EC2 instances
-resource "aws_launch_configuration" "three-tier-app-lconfig" {
-  name_prefix                 = "three-tier-app-lconfig"
-  image_id                    = "ami-0b3a4110c36b9a5f0"
-  instance_type               = "t2.micro"
-  key_name                    = "three-tier-app-asg-kp"
-  security_groups             = [aws_security_group.three-tier-ec2-asg-sg-app.id]
-  user_data                   = <<-EOF
+resource "aws_launch_template" "three-tier-app-lconfig" {
+  name_prefix            = "three-tier-app-lconfig"
+  image_id               = "ami-021e165d8c4ff761d"
+  instance_type          = "t2.micro"
+  vpc_security_group_ids = [aws_security_group.autoscaling-sg-app.id]
+  key_name               = "three-tier-app-asg-kp"
+  user_data = base64encode(<<-EOF
                                 #!/bin/bash
 
                                 sudo yum install mysql -y
 
                                 EOF
-                                
-  associate_public_ip_address = false
+  )
+
+
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
     ignore_changes  = all
+  }
+}
+
+########################################################################################################################
+# Create a Security Group for the ASG
+resource "aws_security_group" "autoscaling-sg-web" {
+  name        = "autoscaling-sg-web-asg-sg"
+  description = "Security group for the ASG"
+  vpc_id      = aws_vpc.three-tier-vpc.id
+
+
+  # Allow inbound traffic on port 22 for SSH access
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Allow all outbound traffic
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+
+# Create a Security Group for the ASG
+resource "aws_security_group" "autoscaling-sg-app" {
+  name        = "autoscaling-sg-app-asg-sg"
+  description = "Security group for the ASG"
+  vpc_id      = aws_vpc.three-tier-vpc.id
+
+
+  # Allow inbound traffic on port 22 for SSH access
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Allow all outbound traffic
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }

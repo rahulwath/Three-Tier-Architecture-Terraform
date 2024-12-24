@@ -8,9 +8,9 @@ resource "aws_vpc" "three-tier-vpc" {
 
 # Public Subnets 
 resource "aws_subnet" "three-tier-pub-sub-1" {
-  vpc_id            = aws_vpc.three-tier-vpc.id
-  cidr_block        = "10.0.0.0/28"
-  availability_zone = "ap-southeast-1a"
+  vpc_id                  = aws_vpc.three-tier-vpc.id
+  cidr_block              = "10.0.0.0/28"
+  availability_zone       = "ap-south-1a"
   map_public_ip_on_launch = "true"
 
   tags = {
@@ -19,9 +19,9 @@ resource "aws_subnet" "three-tier-pub-sub-1" {
 }
 
 resource "aws_subnet" "three-tier-pub-sub-2" {
-  vpc_id            = aws_vpc.three-tier-vpc.id
-  cidr_block        = "10.0.0.16/28"
-  availability_zone = "ap-southeast-1b"
+  vpc_id                  = aws_vpc.three-tier-vpc.id
+  cidr_block              = "10.0.0.16/28"
+  availability_zone       = "ap-south-1b"
   map_public_ip_on_launch = "true"
   tags = {
     Name = "three-tier-pub-sub-2"
@@ -33,7 +33,7 @@ resource "aws_subnet" "three-tier-pub-sub-2" {
 resource "aws_subnet" "three-tier-pvt-sub-1" {
   vpc_id                  = aws_vpc.three-tier-vpc.id
   cidr_block              = "10.0.0.32/28"
-  availability_zone       = "ap-southeast-1a"
+  availability_zone       = "ap-south-1a"
   map_public_ip_on_launch = false
   tags = {
     Name = "three-tier-pvt-sub-1"
@@ -42,7 +42,7 @@ resource "aws_subnet" "three-tier-pvt-sub-1" {
 resource "aws_subnet" "three-tier-pvt-sub-2" {
   vpc_id                  = aws_vpc.three-tier-vpc.id
   cidr_block              = "10.0.0.48/28"
-  availability_zone       = "ap-southeast-1b"
+  availability_zone       = "ap-south-1b"
   map_public_ip_on_launch = false
   tags = {
     Name = "three-tier-pvt-sub-2"
@@ -52,7 +52,7 @@ resource "aws_subnet" "three-tier-pvt-sub-2" {
 resource "aws_subnet" "three-tier-pvt-sub-3" {
   vpc_id                  = aws_vpc.three-tier-vpc.id
   cidr_block              = "10.0.0.64/28"
-  availability_zone       = "ap-southeast-1a"
+  availability_zone       = "ap-south-1a"
   map_public_ip_on_launch = false
   tags = {
     Name = "three-tier-pvt-sub-3"
@@ -61,7 +61,7 @@ resource "aws_subnet" "three-tier-pvt-sub-3" {
 resource "aws_subnet" "three-tier-pvt-sub-4" {
   vpc_id                  = aws_vpc.three-tier-vpc.id
   cidr_block              = "10.0.0.80/28"
-  availability_zone       = "ap-southeast-1b"
+  availability_zone       = "ap-south-1b"
   map_public_ip_on_launch = false
   tags = {
     Name = "three-tier-pvt-sub-4"
@@ -150,9 +150,9 @@ resource "aws_lb" "three-tier-web-lb" {
   name               = "three-tier-web-lb"
   internal           = false
   load_balancer_type = "application"
-  
-  security_groups    = [aws_security_group.three-tier-alb-sg-1.id]
-  subnets            = [aws_subnet.three-tier-pub-sub-1.id, aws_subnet.three-tier-pub-sub-2.id]
+
+  security_groups = [aws_security_group.three-tier-alb-sg-1.id]
+  subnets         = [aws_subnet.three-tier-pub-sub-1.id, aws_subnet.three-tier-pub-sub-2.id]
 
   tags = {
     Environment = "three-tier-web-lb"
@@ -165,9 +165,9 @@ resource "aws_lb" "three-tier-app-lb" {
   name               = "three-tier-app-lb"
   internal           = true
   load_balancer_type = "application"
-  
-  security_groups    = [aws_security_group.three-tier-alb-sg-2.id]
-  subnets            = [aws_subnet.three-tier-pvt-sub-1.id, aws_subnet.three-tier-pvt-sub-2.id]
+
+  security_groups = [aws_security_group.three-tier-alb-sg-2.id]
+  subnets         = [aws_subnet.three-tier-pvt-sub-1.id, aws_subnet.three-tier-pvt-sub-2.id]
 
   tags = {
     Environment = "three-tier-app-lb"
@@ -237,15 +237,15 @@ resource "aws_lb_listener" "three-tier-app-lb-listner" {
 # Register the instances with the target group - web tier
 resource "aws_autoscaling_attachment" "three-tier-web-asattach" {
   autoscaling_group_name = aws_autoscaling_group.three-tier-web-asg.name
-  alb_target_group_arn   = aws_lb_target_group.three-tier-web-lb-tg.arn
-  
+  lb_target_group_arn   = aws_lb_target_group.three-tier-web-lb-tg.arn
+
 }
 
 # Register the instances with the target group - app tier
 resource "aws_autoscaling_attachment" "three-tier-app-asattach" {
   autoscaling_group_name = aws_autoscaling_group.three-tier-app-asg.name
   alb_target_group_arn   = aws_lb_target_group.three-tier-app-lb-tg.arn
-  
+
 }
 
 
